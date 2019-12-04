@@ -11,6 +11,7 @@ class Profile(models.Model):
     enrollment = models.IntegerField(blank=True,null=True,unique=True)
     name = models.TextField(blank=True,null=True)
     semester = models.IntegerField(blank=True,null=True)
+    present = models.BooleanField(blank=True,null=True,default=True)
 
     def __str__(self):
         return str(self.enrollment)

@@ -1,23 +1,22 @@
 from django.contrib import admin
 from user_profile.models import Profile, Department
 from django.urls import path, reverse
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.template.response import TemplateResponse
 from .form import AddDetailForm
 from .models import Department
 from django.utils.html import format_html
+from django.core import serializers
+from django.contrib.contenttypes.models import ContentType
 
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
     # list_display = ('enrollment', 'name', 'department')
-    list_display = ('enrollment', 'name', 'department', 'account_actions')
-    field_order = (
-        'department',
-        'enrollment',
-        'name',
-        'account_actions',
-    )
+    list_display = ('enrollment', 'name', 'department',
+                    'account_actions', 'present')
+    search_fields = ['name', 'enrollment', 'department__name']
+    list_filter = ['department__name', 'present']
 
     def get_urls(self):
         urls = super().get_urls()
@@ -34,6 +33,7 @@ class ProfileAdmin(admin.ModelAdmin):
             ),
         ]
         return custom_urls + urls
+    # Button in every row
 
     def account_actions(self, obj):
         return format_html(
@@ -50,6 +50,8 @@ class ProfileAdmin(admin.ModelAdmin):
         )
         return HttpResponseRedirect(url)
 
+    # Button in next to add profile
+
     def process_action(self, request, *args, **kwargs):
         # account = self.get_object(request, account_id)
         action_form = AddDetailForm
@@ -59,8 +61,9 @@ class ProfileAdmin(admin.ModelAdmin):
             form = action_form(request.POST)
             if form.is_valid():
                 try:
-                    department = Department.objects.create(
-                        name=request.POST.get('department'))
+                    department = Department.objects.get(name=request.POST.get('department'))
+                    if not department:
+                        department = Department.objects.create(name=request.POST.get('department'))
                     instance = form.save(commit=False)
                     instance.department = department
                     instance.save()
@@ -85,6 +88,25 @@ class ProfileAdmin(admin.ModelAdmin):
             'admin/account/account_action.html',
             context,
         )
+    actions = ['make_present', 'make_absent' ]
 
+    def make_present(self, request, queryset):
+        rows_updated = queryset.update(present=True)
+        if rows_updated == 1:
+            message_bit = "1"
+        else:
+            message_bit = "%s" % rows_updated
+        self.message_user(
+            request, "%s successfully make present." % message_bit)
+
+    def make_absent(self, request, queryset):
+        rows_updated = queryset.update(present=False)
+        if rows_updated == 1:
+            message_bit = "1 "
+        else:
+            message_bit = "%s" % rows_updated
+        self.message_user(
+            request, "%s successfully make absent." % message_bit)
 
 admin.site.register(Department)
+admin.site.site_header = "Wel-Come to New World"

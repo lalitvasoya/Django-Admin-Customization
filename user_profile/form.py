@@ -6,4 +6,4 @@ class AddDetailForm(forms.ModelForm):
     department = forms.CharField(max_length=10)
     class Meta:
         model = Profile
-        fields = ['enrollment','name','semester']
+        fields = ['enrollment','name','semester','present']
